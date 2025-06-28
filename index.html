@@ -1,0 +1,1703 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>成都中考分数分布分析</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+        
+        body {
+            background: #ffffff;
+            color: #333333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 40px 0;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            font-weight: 700;
+            color: #000000;
+            letter-spacing: -0.5px;
+            margin-bottom: 15px;
+        }
+        
+        h2 {
+            font-size: 1.8rem;
+            color: #000000;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #666666;
+            font-weight: 400;
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.7;
+        }
+        
+        .card {
+            background: #ffffff;
+            border-radius: 18px;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.05);
+            padding: 30px;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .card:hover {
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.08);
+            transform: translateY(-3px);
+        }
+        
+        .control-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+            padding: 20px 0;
+        }
+        
+        .year-selectors {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-right: auto;
+        }
+        
+        .year-btn {
+            padding: 12px 25px;
+            font-size: 1rem;
+            font-weight: 500;
+            background: #f0f6ff;
+            color: #007aff;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .year-btn:hover {
+            background: #e0eeff;
+            transform: translateY(-3px);
+        }
+        
+        .year-btn.active {
+            background: #007aff;
+            color: white;
+            box-shadow: 0 5px 15px rgba(0, 122, 255, 0.2);
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            font-size: 1rem;
+            font-weight: 500;
+            background: #007aff;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 600;
+        }
+        
+        .btn:hover {
+            background: #0066cc;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 122, 255, 0.2);
+        }
+        
+        .btn.secondary {
+            background: #f6f9ff;
+            color: #666666;
+            border: 1px solid #e6ebf1;
+        }
+        
+        .btn.secondary:hover {
+            background: #edf5ff;
+        }
+        
+        .chart-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+            padding: 15px 0;
+            margin-bottom: 10px;
+        }
+        
+        .control-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .control-option label {
+            font-size: 0.95rem;
+            color: #555555;
+            cursor: pointer;
+        }
+        
+        .range-control {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .range-label {
+            font-size: 0.95rem;
+            color: #555555;
+            margin-bottom: 5px;
+        }
+        
+        .range-inputs {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .range-input {
+            padding: 10px 12px;
+            background: #f8faff;
+            border: 1px solid #dde7f8;
+            border-radius: 10px;
+            width: 100%;
+            font-size: 0.95rem;
+            color: #333333;
+            transition: all 0.2s;
+        }
+        
+        .range-input:focus {
+            border-color: #007aff;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+        }
+        
+        .slider-label {
+            font-size: 0.95rem;
+            color: #555555;
+            white-space: nowrap;
+        }
+        
+        .slider {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 8px;
+            border-radius: 5px;
+            background: #e0ecff;
+            outline: none;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #007aff;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .chart-container {
+            height: 600px;
+            width: 100%;
+            position: relative;
+            margin-top: 10px;
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            flex-wrap: wrap;
+            margin-top: 25px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 4px;
+            margin-right: 10px;
+            border-radius: 2px;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 30px 0;
+            color: #888888;
+            font-size: 0.9rem;
+        }
+        
+        .info-panel {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            color: #666666;
+            font-size: 0.9rem;
+        }
+        
+        .upload-container {
+            background: #f8faff;
+            border-radius: 18px;
+            padding: 25px;
+            text-align: center;
+            margin-bottom: 30px;
+            border: 2px dashed #e0ecff;
+        }
+        
+        .upload-title {
+            font-size: 1.2rem;
+            color: #007aff;
+            margin-bottom: 15px;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .file-label {
+            display: inline-block;
+            padding: 12px 30px;
+            background: rgba(0, 122, 255, 0.1);
+            color: #007aff;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        .file-label:hover {
+            background: rgba(0, 122, 255, 0.2);
+        }
+        
+        .sample-data {
+            font-size: 0.9rem;
+            color: #666666;
+            margin-top: 15px;
+        }
+        
+        .sample-data a {
+            color: #007aff;
+            text-decoration: none;
+        }
+        
+        .score-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            border-radius: 12px;
+            overflow: hidden;
+            background: white;
+        }
+        
+        .score-table th {
+            background: #f8f9fa;
+            padding: 14px 10px;
+            text-align: center;
+            color: #000000;
+            font-weight: 600;
+            border-bottom: 2px solid #dee2e6;
+        }
+        
+        .score-table td {
+            padding: 12px 10px;
+            text-align: center;
+            border-bottom: 1px solid #e9ecef;
+            transition: all 0.2s ease;
+        }
+        
+        .score-table tr:hover td {
+            background: rgba(0, 122, 255, 0.05);
+        }
+        
+        .score-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .bar-chart {
+            height: 25px;
+            background: rgba(0, 122, 255, 0.15);
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .bar-fill {
+            height: 100%;
+            background: linear-gradient(to right, rgba(0, 122, 255, 0.4), #007aff);
+            border-radius: 4px;
+            transition: width 0.6s ease;
+        }
+        
+        .score-range {
+            font-weight: 500;
+            color: #000000;
+        }
+        
+        .range-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            padding: 0 5px;
+            font-size: 0.9rem;
+            color: #666666;
+        }
+        
+        .group-control {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .group-label {
+            font-size: 1rem;
+            color: #555555;
+        }
+        
+        .group-select {
+            padding: 10px 15px;
+            background: #f8faff;
+            border: 1px solid #dde7f8;
+            border-radius: 10px;
+            color: #333333;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .group-select:focus {
+            border-color: #007aff;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
+        }
+        
+        .data-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            background: #f8faff;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .data-table th {
+            padding: 12px 15px;
+            text-align: left;
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #007aff;
+            border-bottom: 2px solid #dee2e6;
+            position: sticky;
+            top: 0;
+        }
+        
+        .data-table td {
+            padding: 10px 15px;
+            border-bottom: 1px solid #e9ecef;
+            color: #333333;
+        }
+        
+        .data-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        .data-table tr:hover {
+            background: #e6f2ff;
+        }
+        
+        .data-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .bar-chart-container {
+            height: 400px;
+            width: 100%;
+            position: relative;
+            margin-top: 30px;
+        }
+        
+        .group-bar-chart {
+            height: 100%;
+            width: 100%;
+        }
+        
+        .section-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            font-size: 1.2rem;
+            color: #555555;
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        .loading-spinner {
+            border: 4px solid rgba(0, 122, 255, 0.2);
+            border-top: 4px solid #007aff;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        .loading-text {
+            font-size: 1.1rem;
+            color: #555555;
+            margin-top: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .chart-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 30px;
+        }
+        
+        .data-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin: 25px 0;
+        }
+        
+        .stat-card {
+            background: #f8faff;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid #e6ebf1;
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: #007aff;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+        }
+        
+        .stat-title {
+            font-size: 0.95rem;
+            color: #555555;
+            margin-bottom: 12px;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #007aff;
+        }
+        
+        .chart-title {
+            font-size: 1.4rem;
+            color: #007aff;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .line-chart-container {
+            height: 500px;
+            width: 100%;
+            position: relative;
+            margin-top: 20px;
+        }
+        
+        .chart-height-control {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 15px 0;
+        }
+        
+        .chart-height-label {
+            font-size: 0.95rem;
+            color: #555555;
+        }
+        
+        .chart-height-slider {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 8px;
+            border-radius: 5px;
+            background: #e0ecff;
+            outline: none;
+        }
+        
+        .chart-height-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #007aff;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .score-bar-chart-container {
+            height: 400px;
+            width: 100%;
+            position: relative;
+            margin-top: 30px;
+        }
+        
+        @media (max-width: 1200px) {
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .data-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .control-panel, .chart-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .year-selectors, .btn-group {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .chart-container {
+                height: 400px;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            .info-panel {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .score-table {
+                font-size: 0.9rem;
+            }
+            
+            .score-table th, 
+            .score-table td {
+                padding: 10px 5px;
+            }
+            
+            .range-inputs {
+                flex-direction: column;
+            }
+            
+            .bar-chart-container {
+                height: 350px;
+            }
+            
+            .data-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>成都中考分数分布分析</h1>
+            <p class="subtitle">综合统计分析成都中考历年分数分布情况，提供多种可视化图表展示</p>
+        </header>
+        
+        <div class="upload-container">
+            <div class="upload-title">上传CSV数据文件</div>
+            <input type="file" id="csvFile" accept=".csv" class="file-input">
+            <label for="csvFile" class="file-label">选择CSV文件</label>
+            <div class="sample-data">程序将自动加载服务器上的数据文件</div>
+        </div>
+        
+        <div class="card">
+            <div class="section-title">
+                <div class="chart-title">
+                    <i>📊</i> 分数分布横向柱状图
+                </div>
+            </div>
+            
+            <div class="chart-height-control">
+                <div class="chart-height-label">图表高度调节：</div>
+                <input type="range" min="400" max="1400" value="600" class="chart-height-slider" id="chartHeightSlider">
+            </div>
+            
+            <div class="control-panel">
+                <div class="year-selectors" id="yearContainer">
+                    <!-- 年份按钮由JS生成 -->
+                </div>
+                <div class="btn-group">
+                    <button class="btn" id="resetBtn">重置选择</button>
+                </div>
+            </div>
+            
+            <div class="chart-container" id="scoreChartContainer">
+                <canvas id="scoreChart"></canvas>
+            </div>
+            
+            <div class="legend" id="chartLegend">
+                <!-- 图例由JS生成 -->
+            </div>
+            
+            <div class="info-panel">
+                <div>提示：选择多个年份可对比不同年份的分数分布情况</div>
+                <div>当前显示年份: <span id="selectedYears">无</span></div>
+            </div>
+        </div>
+        
+        <div class="chart-grid">
+            <div class="card">
+                <div class="section-title">
+                    <div class="chart-title">
+                        <i>📈</i> 分数-人数变化曲线图
+                    </div>
+                </div>
+                
+                <div class="chart-controls">
+                    <div class="control-option">
+                        <input type="checkbox" id="showMarkers" checked>
+                        <label for="showMarkers">显示数据点标记</label>
+                    </div>
+                </div>
+                
+                <div class="line-chart-container">
+                    <canvas id="lineChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="section-title">
+                    <div class="chart-title">
+                        <i>📊</i> 分数数据统计
+                    </div>
+                </div>
+                
+                <div class="data-stats" id="dataStatistics">
+                    <div class="stat-card">
+                        <div class="stat-title">请选择年份查看统计数据</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="section-title">
+                <div class="chart-title">
+                    <i>📊</i> 分数段统计
+                </div>
+            </div>
+            
+            <div class="group-control">
+                <div class="group-label">分组间隔:</div>
+                <select id="groupInterval" class="group-select">
+                    <option value="10">10分一组</option>
+                    <option value="20">20分一组</option>
+                    <option value="30">30分一组</option>
+                    <option value="40">40分一组</option>
+                    <option value="50">50分一组</option>
+                    <option value="100">100分一组</option>
+                </select>
+                <button class="btn" id="applyGroup">应用分组</button>
+            </div>
+            
+            <div class="score-table-container" id="scoreTableContainer">
+                <table class="score-table">
+                    <thead>
+                        <tr>
+                            <th>分数段</th>
+                            <!-- 年份列标题由JS生成 -->
+                        </tr>
+                    </thead>
+                    <tbody id="scoreTableBody">
+                        <tr><td colspan="10" style="text-align:center;padding:40px;color:#888;">正在加载数据...</td></tr>
+                    </tbody>
+                </table>
+                
+                <div class="range-header">
+                    <span>低分段</span>
+                    <span>分数分布比例</span>
+                    <span>高分段</span>
+                </div>
+            </div>
+            
+            <div class="score-bar-chart-container">
+                <canvas id="scoreBarChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="section-title">
+                <div class="chart-title">
+                    <i>📋</i> 原始数据预览
+                </div>
+            </div>
+            
+            <div class="data-container" id="dataContainer">
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">正在加载数据，请稍候...</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            © 2023 成都中考分数分析工具 | 专业数据分析 | 可视化展示
+        </div>
+    </div>
+
+    <script>
+        // DOM元素
+        const yearContainer = document.getElementById('yearContainer');
+        const selectedYearsSpan = document.getElementById('selectedYears');
+        const resetBtn = document.getElementById('resetBtn');
+        const chartLegend = document.getElementById('chartLegend');
+        const scoreTableBody = document.getElementById('scoreTableBody');
+        const dataContainer = document.getElementById('dataContainer');
+        const groupInterval = document.getElementById('groupInterval');
+        const applyGroupBtn = document.getElementById('applyGroup');
+        const chartHeightSlider = document.getElementById('chartHeightSlider');
+        const dataStatsContainer = document.getElementById('dataStatistics');
+        const csvFileInput = document.getElementById('csvFile');
+        const showMarkers = document.getElementById('showMarkers');
+        
+        // 初始化变量
+        let scoreData = null;
+        let years = [];
+        let selectedYears = [];
+        let chart = null;
+        let lineChart = null;
+        let scoreBarChart = null;
+        let groupsData = [];
+        let totalPeople = 0;
+        let rawCSVData = [];
+        let headers = [];
+        let groupSize = 10;
+        let chartHeight = 600;
+
+        // 初始化页面
+        function initPage() {
+            // 设置按钮事件
+            resetBtn.addEventListener('click', resetSelection);
+            
+            // 分组控制
+            applyGroupBtn.addEventListener('click', applyGrouping);
+            
+            // 图表高度控制
+            chartHeightSlider.addEventListener('input', adjustChartHeight);
+            
+            // 文件上传监听
+            csvFileInput.addEventListener('change', handleFileUpload);
+            
+            // 显示数据点标记控制
+            showMarkers.addEventListener('change', createLineChart);
+            
+            // 加载服务器上的CSV文件
+            loadServerCSV();
+        }
+        
+        // 重置选择
+        function resetSelection() {
+            selectedYears = [];
+            document.querySelectorAll('.year-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            updateSelectedYearsDisplay();
+            createMainChart();
+            createLineChart();
+            renderDataStats();
+        }
+        
+        // 应用分组
+        function applyGrouping() {
+            groupSize = parseInt(groupInterval.value);
+            generateGroupData();
+            renderScoreTable();
+            createScoreBarChart();
+            renderDataStats();
+        }
+        
+        // 调整图表高度
+        function adjustChartHeight() {
+            chartHeight = parseInt(this.value);
+            document.getElementById('scoreChartContainer').style.height = chartHeight + 'px';
+            createMainChart();
+        }
+        
+        // 处理文件上传
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // 更新加载状态
+            updateLoadingStatus("正在解析上传的文件...");
+            
+            Papa.parse(file, {
+                header: true,
+                dynamicTyping: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    if (results.errors.length > 0) {
+                        displayError('CSV解析错误: ' + results.errors[0].message);
+                        return;
+                    }
+                    
+                    // 处理解析后的数据
+                    try {
+                        processCSVData(results.data, results.meta.fields);
+                    } catch (e) {
+                        console.error('数据处理错误:', e);
+                        displayError('数据处理失败: ' + e.message);
+                    }
+                },
+                error: function(error) {
+                    console.error('CSV解析错误:', error);
+                    displayError('CSV解析失败: ' + error.message);
+                }
+            });
+        }
+        
+        // 更新加载状态
+        function updateLoadingStatus(message) {
+            dataContainer.innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">${message}</div>
+                </div>
+            `;
+            
+            scoreTableBody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:40px;color:#888;">${message}</td></tr>`;
+        }
+        
+        // 显示错误
+        function displayError(message) {
+            const errorHTML = `
+                <div class="loading">
+                    <div style="font-size: 1.3rem; color: #ff6b6b; margin-bottom: 20px;">⚠️ ${message}</div>
+                </div>
+            `;
+            dataContainer.innerHTML = errorHTML;
+            scoreTableBody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:40px;color:#ff6b6b;">${message}</td></tr>`;
+        }
+
+        // 加载服务器上的CSV文件
+        function loadServerCSV() {
+            const csvURL = 'ChengduZhongkaoLinianFenshu.csv';
+            updateLoadingStatus("正在从服务器加载数据...");
+            
+            // 加载服务器上的CSV文件
+            fetch(csvURL)
+                .then(response => {
+                    if (!response.ok) throw new Error('服务器文件加载失败: ' + response.statusText);
+                    return response.text();
+                })
+                .then(csvText => {
+                    // 使用PapaParse解析CSV
+                    Papa.parse(csvText, {
+                        header: true,
+                        dynamicTyping: true,
+                        skipEmptyLines: true,
+                        complete: function(results) {
+                            if (results.errors.length > 0) {
+                                displayError('CSV解析错误: ' + results.errors[0].message);
+                                return;
+                            }
+                            
+                            // 处理解析后的数据
+                            try {
+                                processCSVData(results.data, results.meta.fields);
+                            } catch (e) {
+                                console.error('数据处理错误:', e);
+                                displayError('数据处理失败: ' + e.message);
+                            }
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('加载CSV文件失败:', error);
+                    displayError('加载服务器文件失败，请上传本地CSV文件');
+                });
+        }
+        
+        // 处理CSV数据
+        function processCSVData(data, headersArr) {
+            // 保存原始数据
+            rawCSVData = data;
+            headers = headersArr;
+            
+            // 第一列是分数，其余列是年份
+            const scores = [];
+            const yearData = {};
+            
+            // 初始化年份数据
+            for (let i = 1; i < headers.length; i++) {
+                yearData[headers[i]] = [];
+            }
+            
+            // 填充数据
+            data.forEach(row => {
+                const score = row[headers[0]];
+                if (typeof score === 'number' && !isNaN(score)) {
+                    scores.push(score);
+                    
+                    for (let i = 1; i < headers.length; i++) {
+                        const year = headers[i];
+                        const people = row[year];
+                        if (typeof people === 'number' && !isNaN(people)) {
+                            if (!yearData[year]) yearData[year] = [];
+                            yearData[year].push(people);
+                        }
+                    }
+                }
+            });
+            
+            // 保存到全局变量
+            scoreData = {
+                scores: scores,
+                ...yearData
+            };
+            
+            years = Object.keys(yearData);
+            
+            // 生成年份按钮
+            generateYearButtons();
+            
+            // 默认选择全部年份
+            selectedYears = [...years];
+            document.querySelectorAll('.year-btn').forEach(btn => {
+                btn.classList.add('active');
+            });
+            updateSelectedYearsDisplay();
+            
+            // 创建图表
+            createMainChart();
+            createLineChart();
+            
+            // 生成分组数据
+            generateGroupData();
+            renderScoreTable();
+            createScoreBarChart();
+            renderDataStats();
+            
+            // 渲染数据预览
+            renderDataPreview();
+        }
+
+        // 生成分组数据
+        function generateGroupData() {
+            if (!scoreData || selectedYears.length === 0) return;
+            
+            groupsData = [];
+            totalPeople = 0;
+            
+            // 确定分数范围
+            const minScore = Math.min(...scoreData.scores);
+            const maxScore = Math.max(...scoreData.scores);
+            
+            // 创建分组
+            const groups = [];
+            
+            // 确保分组覆盖所有分数
+            let groupStart = Math.floor(minScore / groupSize) * groupSize;
+            const groupEnd = Math.ceil(maxScore / groupSize) * groupSize;
+            
+            while (groupStart <= groupEnd) {
+                const start = groupStart;
+                const end = Math.min(groupStart + groupSize - 1, groupEnd);
+                groups.push({ start: start, end: end, values: {}, total: 0 });
+                groupStart += groupSize;
+            }
+            
+            // 按年份填充分组数据
+            selectedYears.forEach(year => {
+                groups.forEach(group => group.values[year] = 0);
+            });
+            
+            // 遍历每个分数点
+            scoreData.scores.forEach((score, index) => {
+                // 确定分组索引
+                const groupIdx = Math.floor((score - minScore) / groupSize);
+                if (groupIdx >= groups.length || groupIdx < 0) return;
+                
+                selectedYears.forEach(year => {
+                    const people = scoreData[year][index];
+                    if (typeof people === 'number') {
+                        groups[groupIdx].values[year] += people;
+                        groups[groupIdx].total += people;
+                        totalPeople += people;
+                    }
+                });
+            });
+            
+            // 计算占比
+            groups.forEach(group => {
+                selectedYears.forEach(year => {
+                    if (group.values[year] > 0) {
+                        group.values[year + '_percent'] = (group.values[year] / totalPeople * 100).toFixed(1) + '%';
+                    }
+                });
+            });
+            
+            // 过滤掉全为零的分组
+            groupsData = groups.filter(group => group.total > 0);
+        }
+
+        // 渲染分数表格
+        function renderScoreTable() {
+            if (!scoreData || selectedYears.length === 0 || groupsData.length === 0) {
+                scoreTableBody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:40px;color:#888;">请选择年份</td></tr>';
+                return;
+            }
+            
+            // 清空表格
+            scoreTableBody.innerHTML = '';
+            
+            // 创建表头行
+            const headerRow = document.createElement('tr');
+            const rangeHeader = document.createElement('th');
+            rangeHeader.textContent = '分数段';
+            headerRow.appendChild(rangeHeader);
+            
+            selectedYears.forEach(year => {
+                const yearHeader = document.createElement('th');
+                yearHeader.textContent = year + '年';
+                headerRow.appendChild(yearHeader);
+            });
+            
+            scoreTableBody.appendChild(headerRow);
+            
+            // 填充表格内容
+            groupsData.forEach(group => {
+                const row = document.createElement('tr');
+                
+                // 分数段
+                const rangeCell = document.createElement('td');
+                rangeCell.className = 'score-range';
+                rangeCell.textContent = `${group.start}-${group.end}分`;
+                row.appendChild(rangeCell);
+                
+                // 各年份占比
+                selectedYears.forEach(year => {
+                    const percentCell = document.createElement('td');
+                    percentCell.textContent = group.values[year + '_percent'] || '0.0%';
+                    row.appendChild(percentCell);
+                });
+                
+                scoreTableBody.appendChild(row);
+            });
+        }
+
+        // 创建主横向柱状图（分数分布）
+        function createMainChart() {
+            const ctx = document.getElementById('scoreChart').getContext('2d');
+            
+            if (chart) {
+                chart.destroy();
+            }
+            
+            // 没有数据时显示提示
+            if (!scoreData || selectedYears.length === 0) {
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                ctx.font = "16px 'San Francisco', 'Helvetica Neue', Arial, sans-serif";
+                ctx.fillStyle = "#888";
+                ctx.textAlign = "center";
+                ctx.fillText("请选择年份查看数据", ctx.canvas.width / 2, ctx.canvas.height / 2);
+                return;
+            }
+            
+            const datasets = [];
+            
+            selectedYears.forEach((year, index) => {
+                const data = [];
+                const scores = [];
+                
+                // 处理数据
+                for (let i = 0; i < scoreData.scores.length; i++) {
+                    const score = scoreData.scores[i];
+                    const count = scoreData[year][i];
+                    
+                    if (typeof count === 'number' && count > 0) {
+                        data.push(count);
+                        scores.push(score + '分');
+                    }
+                }
+                
+                datasets.push({
+                    label: year + '年',
+                    data: data,
+                    backgroundColor: getColor(index, 0.7),
+                    borderColor: getColor(index),
+                    borderWidth: 1
+                });
+            });
+            
+            const labels = [...new Set(scoreData.scores)].sort((a, b) => b - a).map(score => score + '分');
+            
+            // 创建横向柱状图
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: '人数',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                },
+                                color: '#555'
+                            },
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            },
+                            ticks: {
+                                color: '#555'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: '分数',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                },
+                                color: '#555'
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            },
+                            ticks: {
+                                color: '#555'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                            titleFont: {
+                                size: 14
+                            },
+                            bodyFont: {
+                                size: 13
+                            },
+                            padding: 12,
+                            cornerRadius: 6,
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.parsed.x.toLocaleString()}人`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            createLegend();
+        }
+
+        // 创建分数-人数变化曲线图
+        function createLineChart() {
+            const ctx = document.getElementById('lineChart').getContext('2d');
+            
+            if (lineChart) {
+                lineChart.destroy();
+            }
+            
+            // 没有数据时显示提示
+            if (!scoreData || selectedYears.length === 0) {
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                ctx.font = "16px 'San Francisco', 'Helvetica Neue', Arial, sans-serif";
+                ctx.fillStyle = "#888";
+                ctx.textAlign = "center";
+                ctx.fillText("请选择年份查看数据", ctx.canvas.width / 2, ctx.canvas.height / 2);
+                return;
+            }
+            
+            const datasets = [];
+            
+            selectedYears.forEach((year, index) => {
+                const data = [];
+                const scores = [];
+                
+                // 处理数据
+                for (let i = 0; i < scoreData.scores.length; i++) {
+                    const score = scoreData.scores[i];
+                    const count = scoreData[year][i];
+                    
+                    if (typeof count === 'number' && count > 0) {
+                        data.push(count);
+                        scores.push(score);
+                    }
+                }
+                
+                datasets.push({
+                    label: year + '年',
+                    data: data,
+                    backgroundColor: 'rgba(255, 255, 255, 0)',
+                    borderColor: getColor(index),
+                    borderWidth: 3,
+                    pointBackgroundColor: showMarkers.checked ? getColor(index) : 'rgba(0,0,0,0)',
+                    pointRadius: showMarkers.checked ? 4 : 0,
+                    pointHoverRadius: showMarkers.checked ? 6 : 0,
+                    tension: 0.1
+                });
+            });
+            
+            const labels = [...new Set(scoreData.scores)].sort((a, b) => a - b).map(score => score + '分');
+            
+            // 创建折线图
+            lineChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: '分数',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                },
+                                color: '#555'
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            },
+                            ticks: {
+                                color: '#555'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: '人数',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                },
+                                color: '#555'
+                            },
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            },
+                            ticks: {
+                                color: '#555'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    size: 12
+                                },
+                                color: '#555'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                            titleFont: {
+                                size: 14,
+                                color: '#000'
+                            },
+                            bodyFont: {
+                                size: 13,
+                                color: '#000'
+                            },
+                            padding: 12,
+                            cornerRadius: 6,
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.parsed.y.toLocaleString()}人`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 创建分数段统计柱状图
+        function createScoreBarChart() {
+            const ctx = document.getElementById('scoreBarChart').getContext('2d');
+            
+            if (scoreBarChart) {
+                scoreBarChart.destroy();
+            }
+            
+            // 没有数据时显示提示
+            if (!scoreData || selectedYears.length === 0 || groupsData.length === 0) {
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                ctx.font = "16px 'San Francisco', 'Helvetica Neue', Arial, sans-serif";
+                ctx.fillStyle = "#888";
+                ctx.textAlign = "center";
+                ctx.fillText("请选择年份查看数据", ctx.canvas.width / 2, ctx.canvas.height / 2);
+                return;
+            }
+            
+            // 准备数据
+            const labels = groupsData.map(group => `${group.start}-${group.end}分`);
+            const datasets = [];
+            
+            // 为每个选中年份创建数据集
+            selectedYears.forEach((year, index) => {
+                const data = groupsData.map(group => group.values[year] || 0);
+                
+                datasets.push({
+                    label: year + '年',
+                    data: data,
+                    backgroundColor: getColor(index, 0.7),
+                    borderColor: getColor(index),
+                    borderWidth: 1
+                });
+            });
+            
+            // 创建柱状图
+            scoreBarChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: '分数段',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                },
+                                color: '#555'
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            },
+                            ticks: {
+                                color: '#555'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: '人数',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                },
+                                color: '#555'
+                            },
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            },
+                            ticks: {
+                                color: '#555'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    size: 12
+                                },
+                                color: '#555'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                            titleFont: {
+                                size: 14
+                            },
+                            bodyFont: {
+                                size: 13
+                            },
+                            padding: 12,
+                            cornerRadius: 6,
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.parsed.y.toLocaleString()}人`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 渲染统计数据卡片
+        function renderDataStats() {
+            if (!scoreData || selectedYears.length === 0) {
+                dataStatsContainer.innerHTML = '<div class="stat-card"><div class="stat-title">请选择年份查看数据统计</div></div>';
+                return;
+            }
+            
+            let statsHTML = '';
+            
+            selectedYears.forEach(year => {
+                // 计算统计值
+                let minScore = Infinity;
+                let maxScore = -Infinity;
+                let totalStudents = 0;
+                let totalScore = 0;
+                let mode = 0;
+                let modeCount = 0;
+                
+                // 处理数据
+                for (let i = 0; i < scoreData.scores.length; i++) {
+                    const score = scoreData.scores[i];
+                    const count = scoreData[year][i];
+                    
+                    if (typeof count === 'number' && count > 0) {
+                        // 更新最小值和最大值
+                        if (score < minScore) minScore = score;
+                        if (score > maxScore) maxScore = score;
+                        
+                        // 计算总人数和总分
+                        totalStudents += count;
+                        totalScore += score * count;
+                        
+                        // 计算众数
+                        if (count > modeCount) {
+                            mode = score;
+                            modeCount = count;
+                        }
+                    }
+                }
+                
+                // 计算平均分
+                const averageScore = totalStudents > 0 ? (totalScore / totalStudents).toFixed(1) : 0;
+                
+                statsHTML += `
+                    <div class="stat-card">
+                        <div class="stat-title">${year}年</div>
+                        <div class="stat-value">${totalStudents.toLocaleString()}</div>
+                        <div class="stat-title">考生总数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-title">平均分</div>
+                        <div class="stat-value">${averageScore}</div>
+                        <div class="stat-title">分数范围: ${minScore}-${maxScore}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-title">分数众数</div>
+                        <div class="stat-value">${mode}</div>
+                        <div class="stat-title">考生人数: ${modeCount.toLocaleString()}</div>
+                    </div>
+                `;
+            });
+            
+            dataStatsContainer.innerHTML = statsHTML;
+        }
+
+        // 生成年份选择按钮
+        function generateYearButtons() {
+            yearContainer.innerHTML = '';
+            
+            years.forEach(year => {
+                const btn = document.createElement('button');
+                btn.className = 'year-btn';
+                btn.textContent = year;
+                btn.dataset.year = year;
+                
+                btn.addEventListener('click', function() {
+                    this.classList.toggle('active');
+                    
+                    const year = this.dataset.year;
+                    if (selectedYears.includes(year)) {
+                        selectedYears = selectedYears.filter(y => y !== year);
+                    } else {
+                        selectedYears.push(year);
+                    }
+                    
+                    updateSelectedYearsDisplay();
+                    createMainChart();
+                    createLineChart();
+                    generateGroupData();
+                    renderScoreTable();
+                    createScoreBarChart();
+                    renderDataStats();
+                });
+                
+                yearContainer.appendChild(btn);
+            });
+        }
+
+        // 更新已选择年份显示
+        function updateSelectedYearsDisplay() {
+            selectedYearsSpan.textContent = selectedYears.length > 0 ? 
+                selectedYears.join(', ') : '无';
+        }
+
+        // 生成颜色 (带透明度控制)
+        function getColor(index, alpha = 1) {
+            const colors = [
+                `rgba(0, 122, 255, ${alpha})`,   // 蓝色
+                `rgba(52, 199, 89, ${alpha})`,   // 绿色
+                `rgba(255, 149, 0, ${alpha})`,   // 橙色
+                `rgba(175, 82, 222, ${alpha})`,  // 紫色
+                `rgba(255, 59, 48, ${alpha})`,   // 红色
+                `rgba(88, 86, 214, ${alpha})`,   // 靛蓝色
+                `rgba(90, 200, 250, ${alpha})`   // 青色
+            ];
+            return colors[index % colors.length];
+        }
+
+        // 生成图例
+        function createLegend() {
+            chartLegend.innerHTML = '';
+            
+            selectedYears.forEach((year, index) => {
+                const item = document.createElement('div');
+                item.className = 'legend-item';
+                
+                const color = document.createElement('div');
+                color.className = 'legend-color';
+                color.style.background = getColor(index);
+                
+                item.appendChild(color);
+                item.appendChild(document.createTextNode(year + '年'));
+                
+                chartLegend.appendChild(item);
+            });
+        }
+
+        // 渲染数据预览
+        function renderDataPreview() {
+            if (!rawCSVData || rawCSVData.length === 0) {
+                dataContainer.innerHTML = '<div class="loading"><div class="loading-text">数据加载失败或数据为空</div></div>';
+                return;
+            }
+            
+            // 创建表格
+            let tableHTML = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+            `;
+            
+            // 添加表头
+            headers.forEach(header => {
+                tableHTML += `<th>${header}</th>`;
+            });
+            
+            tableHTML += `
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            // 添加数据行
+            rawCSVData.forEach(row => {
+                tableHTML += `<tr>`;
+                headers.forEach(header => {
+                    tableHTML += `<td>${row[header]}</td>`;
+                });
+                tableHTML += `</tr>`;
+            });
+            
+            tableHTML += `
+                    </tbody>
+                </table>
+            `;
+            
+            dataContainer.innerHTML = tableHTML;
+        }
+
+        // 初始化页面
+        window.onload = initPage;
+    </script>
+</body>
+</html>
